@@ -26,8 +26,6 @@ class Offer(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # A many-to-many relationship with OfferDetail, representing the details of the offer.
-    details = models.ManyToManyField('OfferDetail')
     min_price = models.DecimalField(max_digits=10, decimal_places=2)
     min_delivery_time = models.PositiveIntegerField()
 
@@ -58,6 +56,8 @@ class OfferDetail(models.Model):
     FEATURES = [
         ("Logo Design", "Logo Design"),
         ("Visitenkarte", "Visitenkarte"),
+        ("Briefpapier", "Briefpapier"),
+        ("Flyer", "Flyer"),
     ]
 
     OFFER_TYPES = [
@@ -74,6 +74,8 @@ class OfferDetail(models.Model):
         max_length=50, choices=FEATURES, default="Logo Design")
     offer_type = models.CharField(
         max_length=20, choices=OFFER_TYPES, default="basic")
+    offer = models.ForeignKey(
+        Offer, related_name='details', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.title
