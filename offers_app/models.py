@@ -2,6 +2,20 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class Feature(models.Model):
+    """
+    Model representing a feature.
+    Attributes:
+        name (str): The name of the feature. It must be unique and can have a maximum length of 50 characters.
+    Methods:
+        __str__(): Returns the string representation of the feature, which is its name.
+    """
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Offer(models.Model):
     """
     Model representing an offer.
@@ -26,19 +40,12 @@ class Offer(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    min_price = models.DecimalField(max_digits=10, decimal_places=2)
-    min_delivery_time = models.PositiveIntegerField()
+    min_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True)
+    min_delivery_time = models.PositiveIntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.title
-
-    @property
-    def user_details(self):
-        return {
-            "first_name": self.user.first_name,
-            "last_name": self.user.last_name,
-            "username": self.user.username,
-        }
 
 
 class OfferDetail(models.Model):
@@ -49,16 +56,9 @@ class OfferDetail(models.Model):
         revisions (int): The number of revisions allowed for the offer.
         delivery_time_in_days (int): The delivery time in days for the offer.
         price (Decimal): The price of the offer.
-        features (str): The feature included in the offer, chosen from predefined options.
+        features (ManyToManyField): The features included in the offer, chosen from predefined options.
         offer_type (str): The type of the offer, chosen from predefined options.
     """
-
-    FEATURES = [
-        ("Logo Design", "Logo Design"),
-        ("Visitenkarte", "Visitenkarte"),
-        ("Briefpapier", "Briefpapier"),
-        ("Flyer", "Flyer"),
-    ]
 
     OFFER_TYPES = [
         ("basic", "Basic"),
@@ -70,12 +70,32 @@ class OfferDetail(models.Model):
     revisions = models.PositiveIntegerField()
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    features = models.CharField(
-        max_length=50, choices=FEATURES, default="Logo Design")
+    features = models.ManyToManyField(Feature)
     offer_type = models.CharField(
         max_length=20, choices=OFFER_TYPES, default="basic")
     offer = models.ForeignKey(
         Offer, related_name='details', on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Order(models.Model):
+
+    customer_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='customer_orders')
+    business_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='business_orders')
+    title = models.CharField(max_length=100)
+    revisions = models.PositiveIntegerField()
+    delivery_time_in_days = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    features = models.ManyToManyField(Feature)
+    offer_type = models.CharField(
+        max_length=20, choices=OfferDetail.OFFER_TYPES, default="basic")
+    status = models.CharField(max_length=20, default="in_progress")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
