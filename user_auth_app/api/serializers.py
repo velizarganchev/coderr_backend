@@ -44,3 +44,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         user.save()
 
         return instance
+
+
+class UserProfileTypeSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    created_at = serializers.DateTimeField(source='user.date_joined')
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'file', 'location', 'tel',
+                  'description', 'working_hours', 'type', 'created_at']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.type == 'customer':
+            return {
+                'user': representation['user'],
+                'file': representation['file'],
+                'created_at': representation['created_at'],
+                'type': representation['type']
+            }
+        return representation

@@ -7,8 +7,20 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
-from user_auth_app.api.serializers import UserProfileSerializer
+from user_auth_app.api.serializers import UserProfileSerializer, UserProfileTypeSerializer
 from user_auth_app.models import UserProfile
+
+
+class UserProfileType_View(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request, type=None, format=None):
+        if type:
+            userprofiles = UserProfile.objects.filter(type=type)
+            serializer = UserProfileTypeSerializer(userprofiles, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': 'error', 'message': 'Type is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfile_View(APIView):
