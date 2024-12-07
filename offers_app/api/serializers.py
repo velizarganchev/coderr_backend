@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from ..models import Offer, OfferDetail, Feature
 
-
 class FeatureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feature
@@ -66,3 +65,4 @@ class OfferSerializer(serializers.ModelSerializer):
             "last_name": obj.user.last_name,
             "username": obj.user.username,
         }
+
