@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 class Feature(models.Model):
     """
@@ -67,7 +69,7 @@ class OfferDetail(models.Model):
     ]
 
     title = models.CharField(max_length=100)
-    revisions = models.PositiveIntegerField()
+    revisions = models.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(100)])
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     features = models.ManyToManyField(Feature)
@@ -78,7 +80,3 @@ class OfferDetail(models.Model):
 
     def __str__(self):
         return self.title
-
-
-
-
