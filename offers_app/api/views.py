@@ -13,6 +13,9 @@ class Offer_View(generics.ListCreateAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
 
+    # filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    # search_fields = ['description']
+
     def list(self, request):
         creator_id = request.query_params.get('creator_id', None)
         min_price = request.query_params.get('min_price', None)

@@ -29,7 +29,8 @@ class UserProfile_View(APIView):
     def get(self, request, uid=None, format=None):
         if uid:
             try:
-                userprofile = UserProfile.objects.get(pk=uid)
+                user = User.objects.get(pk=uid)
+                userprofile = UserProfile.objects.get(user=user)
                 serializer = UserProfileSerializer(userprofile)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except UserProfile.DoesNotExist:
@@ -41,7 +42,8 @@ class UserProfile_View(APIView):
 
     def put(self, request, uid=None, format=None):
         try:
-            userprofile = UserProfile.objects.get(pk=uid)
+            user = User.objects.get(pk=uid)
+            userprofile = UserProfile.objects.get(user=user)
         except UserProfile.DoesNotExist:
             return Response({'status': 'error', 'message': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -54,7 +56,8 @@ class UserProfile_View(APIView):
 
     def patch(self, request, uid=None, format=None):
         try:
-            userprofile = UserProfile.objects.get(pk=uid)
+            user = User.objects.get(pk=uid)
+            userprofile = UserProfile.objects.get(user=user)
         except UserProfile.DoesNotExist:
             return Response({'status': 'error', 'message': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -99,7 +102,7 @@ class UserRegister_View(APIView):
             'token': token.key,
             'username': user.username,
             'email': user.email,
-            'user_id': user.pk,
+            'user_id': user.id,
         }, status=status.HTTP_201_CREATED)
 
     def validate_registration_data(self, username, email, password, repeated_password):
@@ -157,7 +160,7 @@ class UserLogin_View(APIView):
                 'token': token.key,
                 'username': user.username,
                 'email': user.email,
-                'user_id': user.pk
+                'user_id': user.id
             }, status=status.HTTP_200_OK)
         else:
             return Response(

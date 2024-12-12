@@ -20,7 +20,7 @@ class Review(models.Model):
     reviewer = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, related_name='reviews_by_user', limit_choices_to={'type': 'customer'})
     rating = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)])
+        validators=[MinValueValidator(1), MaxValueValidator(5)], default=1)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

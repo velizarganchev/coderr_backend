@@ -1,4 +1,5 @@
 from django.db.models import Avg
+from rest_framework.permissions import AllowAny
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,6 +9,8 @@ from user_auth_app.models import UserProfile
 
 
 class BaseInfo_View(APIView):
+    authentication_classes = []
+
     def get(self, request):
         """
         Handle GET request and return base information including offer count, review count,
@@ -23,8 +26,9 @@ class BaseInfo_View(APIView):
 
         offer_count = Offer.objects.all().count()
         review_count = reviews.count()
-        average_rating = reviews.aggregate(Avg('rating'))['rating__avg']
-        business_profile_count = UserProfile.objects.filter(type='business').count()
+        average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+        business_profile_count = UserProfile.objects.filter(
+            type='business').count()
 
         return Response({
             "offer_count": offer_count,

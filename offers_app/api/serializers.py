@@ -92,6 +92,10 @@ class OfferSerializer(serializers.ModelSerializer):
         user = Token.objects.get(key=token_key).user if token_key else None
         details_data = validated_data.pop('details', [])
 
+        if user.userprofile.type != 'business':
+            raise serializers.ValidationError(
+                {'error': 'Nur Geschäftskunden können Angebote erstellen'})
+
         offer = Offer.objects.create(user=user, **validated_data)
 
         min_price = None

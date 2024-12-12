@@ -42,4 +42,4 @@ class CompletedOrderCount_View(generics.ListAPIView):
     def get(self, request, pk, format=None):
         order_count = Order.objects.filter(
             status__in=['completed']).count()
-        return Response({'order_count': order_count}, status=status.HTTP_200_OK)
+        return Response({'completed_order_count': order_count}, status=status.HTTP_200_OK)
