@@ -37,8 +37,7 @@ class Offer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     image = models.ImageField(
-        upload_to='images', null=True, blank=True, default='default.jpg')
-    # The text description of the review. No length constraints specified.
+        upload_to='images', null=True, blank=True)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -72,7 +71,7 @@ class OfferDetail(models.Model):
     revisions = models.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(100)])
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    features = models.ManyToManyField(Feature)
+    features = models.ManyToManyField(Feature, blank=True)
     offer_type = models.CharField(
         max_length=20, choices=OFFER_TYPES, default="basic")
     offer = models.ForeignKey(

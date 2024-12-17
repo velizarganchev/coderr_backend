@@ -10,7 +10,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'business_user',
-            'reviewer',
             'rating',
             'description',
             'created_at',
@@ -35,23 +34,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         except Token.DoesNotExist:
             raise serializers.ValidationError({'error': 'Ungültiges Token'})
 
-        if user.userprofile.type == 'customer':
-            if Review.objects.filter(reviewer=user.userprofile).exists():
-                raise serializers.ValidationError(
-                    {
-                        'error': 'Sie haben dieses Unternehmen bereits bewertet'
-                    })
-
         business_user = validated_data.get('business_user')
 
         if not business_user:
             raise serializers.ValidationError(
                 {'error': 'business_user is required'})
 
-        validated_data.pop('reviewer', None)
-        review = Review.objects.create(
-            reviewer=user.userprofile, **validated_data)
+        if Review.objects.filter(business_user=business_user, reviewer=user):
+            raise serializers.ValidationError(
+                {
+                    'error': 'Sie haben dieses Unternehmen bereits bewertet'
+                })
+
+        review = Review.objects.create(reviewer=user, **validated_data)
         return review
 
-    
-        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['reviewer'] = instance.reviewer.id
+        return representation

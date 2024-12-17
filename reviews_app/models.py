@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 from user_auth_app.models import UserProfile
 from django.core.validators import MinValueValidator, MaxValueValidator
 
@@ -16,9 +18,9 @@ class Review(models.Model):
         updated_at (DateTimeField): The date and time when the review was last updated.
     """
     business_user = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name='reviews_for_business', limit_choices_to={'type': 'business'})
+        User, on_delete=models.CASCADE, related_name='reviews_for_business')
     reviewer = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name='reviews_by_user', limit_choices_to={'type': 'customer'})
+        User, on_delete=models.CASCADE, related_name='reviews_by_user')
     rating = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)], default=1)
     description = models.TextField()

@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id',
+        fields = ['pk',
                   'username', 'first_name', 'last_name', 'email', 'token', 'date_joined']
 
     def get_token(self, obj):
