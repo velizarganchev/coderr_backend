@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from offers_app.models import Feature, OfferDetail
+from django.core.validators import MinValueValidator
 
 
 class Order(models.Model):
@@ -35,7 +36,11 @@ class Order(models.Model):
     business_user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='business_orders')
     title = models.CharField(max_length=100)
-    revisions = models.PositiveIntegerField()
+    revisions = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(-1)],
+        help_text="Number of revisions allowed. Use -1 for unlimited revisions."
+    )
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     features = models.ManyToManyField(Feature)

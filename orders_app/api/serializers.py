@@ -6,6 +6,9 @@ from ..models import Order
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Order model.
+    """
     class Meta:
         model = Order
         fields = [
@@ -17,6 +20,9 @@ class OrderSerializer(serializers.ModelSerializer):
                             'delivery_time_in_days', 'price', 'offer_type', 'features']
 
     def create(self, validated_data):
+        """
+        Create a new order instance.
+        """
         request = self.context.get('request')
         token_key = None
         customer_user = None
@@ -65,6 +71,9 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
 
     def update(self, instance, validated_data):
+        """
+        Update an existing order instance.
+        """
         request = self.context.get('request')
         token_key = None
         current_user = None
@@ -95,6 +104,9 @@ class OrderSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
+        """
+        Customize the representation of the order instance.
+        """
         representation = super().to_representation(instance)
         representation['features'] = [
             feature.name for feature in instance.features.all()]
