@@ -2,7 +2,7 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
-from user_auth_app.api.views import UserRegister_View, UserLogin_View, UserLogout_View, UserProfile_View, UserProfileType_View, CheckAndCreateUsers_View
+from user_auth_app.api.views import UserRegister_View, UserLogin_View, UserLogout_View, UserProfile_View, UserProfileType_View
 
 urlpatterns = [
     path('api/registration/', UserRegister_View.as_view(), name='register'),
@@ -11,5 +11,4 @@ urlpatterns = [
     path('api/profile/', UserProfile_View.as_view(), name='profile'),
     path('api/profile/<uid>/', UserProfile_View.as_view(), name='profile_detail'),
     path('api/profiles/<type>/', UserProfileType_View.as_view(), name='profiletype'),
-    path('api/check-and-create-users/', CheckAndCreateUsers_View.as_view(), name='check_and_create_users'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

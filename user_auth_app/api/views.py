@@ -179,24 +179,3 @@ class UserLogout_View(APIView):
             return Response({'detail': 'User logged out successfully.'}, status=status.HTTP_200_OK)
         except Token.DoesNotExist:
             return Response({'detail': 'Token does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CheckAndCreateUsers_View(APIView):
-    def post(self, request):
-        users = [
-            {'username': 'andrey', 'password': 'asdasd', 'type': 'customer'},
-            {'username': 'kevin', 'password': 'asdasd24', 'type': 'business'}
-        ]
-        created_users = []
-        for user_data in users:
-            if not User.objects.filter(username=user_data['username']).exists():
-                user = User.objects.create_user(
-                    username=user_data['username'], password=user_data['password'])
-                user.userprofile.type = user_data['type']
-                user.userprofile.save()
-                Token.objects.create(user=user)
-                created_users.append(user_data['username'])
-        
-        if created_users:
-            return Response({'created_users': created_users}, status=status.HTTP_201_CREATED)
-        return Response({'message': 'Users already exist'}, status=status.HTTP_200_OK)

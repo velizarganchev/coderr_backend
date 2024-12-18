@@ -8,7 +8,7 @@ from .serializers import ReviewSerializer
 
 
 class Review_View(generics.ListCreateAPIView):
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -17,10 +17,6 @@ class Review_View(generics.ListCreateAPIView):
     filterset_fields = ['business_user_id']
     ordering_fields = ['updated_at']
     ordering = ['-updated_at']
-
-    # def list(self, request):
-    #     serializer = ReviewSerializer(self.get_queryset(), many=True)
-    #     return Response({'data': serializer.data})
 
 
 class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):

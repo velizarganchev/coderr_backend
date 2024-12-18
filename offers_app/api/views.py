@@ -1,5 +1,6 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from django.db.models import Q
 
@@ -7,48 +8,61 @@ from .serializers import OfferSerializer, SingleOfferSerializer, OfferDetailSeri
 from ..models import Offer, OfferDetail
 
 
+class OfferPagination(PageNumberPagination):
+    """Custom Pagination for Offers."""
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 50
+
+
 class Offer_View(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
-
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
+    pagination_class = OfferPagination
 
-    # filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    # search_fields = ['description']
+    def get_queryset(self):
+        queryset = super().get_queryset()
 
-    def list(self, request):
-        creator_id = request.query_params.get('creator_id', None)
-        min_price = request.query_params.get('min_price', None)
-        ordering = request.query_params.get('ordering', None)
-        max_delivery_time = request.query_params.get('max_delivery_time', None)
-
-        page_size = request.query_params.get('page_size', 6)
-        page = request.query_params.get('page', None)
-
-        search = request.query_params.get('search', None)
-
+        creator_id = self.request.query_params.get('creator_id')
         if creator_id:
-            queryset = self.get_queryset().filter(user=creator_id)
-        elif min_price:
-            queryset = self.get_queryset().filter(min_price__gte=min_price)
-        elif ordering:
-            queryset = self.get_queryset().order_by(ordering)
-        elif max_delivery_time:
-            queryset = self.get_queryset().filter(min_delivery_time__lte=max_delivery_time)
-        elif page:
-            queryset = self.get_queryset().all().order_by('-created_at')
-            page_size = int(page_size)
-            page = int(page)
-            queryset = queryset[(page - 1) * page_size:page * page_size]
-        elif search:
-            queryset = self.get_queryset().filter(
+            queryset = queryset.filter(user_id=creator_id)
+
+        min_price = self.request.query_params.get('min_price')
+        if min_price:
+            queryset = queryset.filter(min_price__gte=min_price)
+
+        max_delivery_time = self.request.query_params.get('max_delivery_time')
+        if max_delivery_time:
+            queryset = queryset.filter(
+                min_delivery_time__lte=max_delivery_time)
+
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
             )
-        else:
-            queryset = self.get_queryset().all()
 
-        serializer = OfferSerializer(queryset, many=True)
-        return Response({'count': len(serializer.data), 'results': serializer.data})
+        ordering = self.request.query_params.get('ordering')
+        if ordering:
+            queryset = queryset.order_by(ordering)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """Override the list method to add custom response structure."""
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'count': len(serializer.data),
+            'results': serializer.data
+        })
 
 
 class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
