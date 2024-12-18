@@ -7,8 +7,10 @@ from django.db.models import Q
 from ..models import Review
 from .serializers import ReviewSerializer
 
-
 class Review_View(generics.ListCreateAPIView):
+    """
+    API view to list and create reviews.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     queryset = Review.objects.all()
@@ -23,8 +25,10 @@ class Review_View(generics.ListCreateAPIView):
         user = self.request.user
         return Review.objects.filter(Q(business_user=user) | Q(reviewer=user))
 
-
 class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API view to retrieve, update, or delete a single review.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     queryset = Review.objects.all()

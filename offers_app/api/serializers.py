@@ -8,6 +8,9 @@ OFFER_DETAIL_FIELDS = ['revisions',
 
 
 class FeatureSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Feature model.
+    """
     class Meta:
         model = Feature
         fields = ['name']
@@ -21,6 +24,9 @@ class FeatureSerializer(serializers.ModelSerializer):
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the OfferDetail model.
+    """
     features = FeatureSerializer(many=True)
 
     class Meta:
@@ -65,6 +71,9 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
 
 class OfferSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Offer model.
+    """
     user = serializers.ReadOnlyField(source='user.username')
     details = OfferDetailSerializer(many=True)
     user_details = serializers.SerializerMethodField('get_user_details_field')
@@ -129,7 +138,7 @@ class OfferSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         request = self.context.get('request', None)
 
-        if request and request.method == 'POST':
+        if (request and request.method == 'POST'):
             details = []
             for detail in instance.details.all():
                 # Korrigiere hier die Verarbeitung der Features
@@ -181,6 +190,9 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
 class SingleOfferSerializer(serializers.ModelSerializer):
+    """
+    Serializer for a single Offer model.
+    """
     details = OfferDetailSerializer(many=True)
     user_details = serializers.SerializerMethodField('get_user_details_field')
 

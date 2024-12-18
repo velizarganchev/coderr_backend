@@ -1,9 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class UserProfile(models.Model):
+    """
+    Model representing a user profile.
 
+    Attributes:
+        user (OneToOneField): The user associated with this profile.
+        file (ImageField): The profile image.
+        location (CharField): The location of the user.
+        tel (CharField): The telephone number of the user.
+        description (TextField): A description of the user.
+        working_hours (CharField): The working hours of the user.
+        type (CharField): The type of user (customer or business).
+    """
     USER_TYPE_CHOICES = [
         ('customer', 'Customer'),
         ('business', 'Business'),

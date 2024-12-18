@@ -12,6 +12,9 @@ from user_auth_app.models import UserProfile
 
 
 class UserProfileType_View(APIView):
+    """
+    API view to retrieve user profiles by type.
+    """
     # permission_classes = [IsAuthenticated]
 
     def get(self, request, type=None, format=None):
@@ -24,6 +27,9 @@ class UserProfileType_View(APIView):
 
 
 class UserProfile_View(APIView):
+    """
+    API view to retrieve, update, or delete user profiles.
+    """
     # permission_classes = [IsAuthenticated]
 
     def get(self, request, uid=None, format=None):
@@ -78,6 +84,9 @@ class UserProfile_View(APIView):
 
 
 class UserRegister_View(APIView):
+    """
+    API view to register a new user.
+    """
     # permission_classes = [AllowAny]
     def post(self, request):
         username = request.data.get('username')
@@ -128,6 +137,9 @@ class UserRegister_View(APIView):
 
 
 class UserLogin_View(APIView):
+    """
+    API view to log in a user.
+    """
     # permission_classes = [AllowAny]
 
     def post(self, request):
@@ -170,6 +182,9 @@ class UserLogin_View(APIView):
 
 
 class UserLogout_View(APIView):
+    """
+    API view to log out a user.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):

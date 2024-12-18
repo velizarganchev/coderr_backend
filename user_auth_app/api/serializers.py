@@ -6,6 +6,9 @@ from user_auth_app.models import UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the User model.
+    """
     token = serializers.SerializerMethodField()
 
     class Meta:
@@ -19,6 +22,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the UserProfile model.
+    """
     user = serializers.CharField(source='user.id')
     username = serializers.CharField(source='user.username')
     first_name = serializers.CharField(source='user.first_name')
@@ -47,6 +53,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserProfileTypeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the UserProfile model filtered by type.
+    """
     user = UserSerializer()
     created_at = serializers.DateTimeField(source='user.date_joined')
 

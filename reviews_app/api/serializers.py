@@ -5,6 +5,9 @@ from ..models import Review
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Review model.
+    """
     class Meta:
         model = Review
         fields = [
@@ -17,6 +20,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        """
+        Create a new review instance.
+        """
         request = self.context.get('request')
         token_key = None
         user = None
@@ -50,6 +56,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         return review
 
     def to_representation(self, instance):
+        """
+        Customize the representation of the review instance.
+        """
         representation = super().to_representation(instance)
         representation['reviewer'] = instance.reviewer.id
         return representation

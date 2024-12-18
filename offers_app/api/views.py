@@ -16,6 +16,9 @@ class OfferPagination(PageNumberPagination):
 
 
 class Offer_View(generics.ListCreateAPIView):
+    """
+    API view to list and create offers.
+    """
     permission_classes = [permissions.IsAuthenticated]
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
@@ -66,12 +69,18 @@ class Offer_View(generics.ListCreateAPIView):
 
 
 class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API view to retrieve, update, or delete a single offer.
+    """
     permission_classes = [permissions.IsAuthenticated]
     queryset = Offer.objects.all()
     serializer_class = SingleOfferSerializer
 
 
 class SingleOfferDetails_View(generics.RetrieveAPIView):
+    """
+    API view to retrieve details of a single offer.
+    """
     permission_classes = [permissions.IsAuthenticated]
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
