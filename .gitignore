@@ -157,6 +157,10 @@ cython_debug/
 # Initialization flag file
 initialized.flag
 
+# Uploaded files
+uploads/images/*
+uploads/profile_images/*
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
