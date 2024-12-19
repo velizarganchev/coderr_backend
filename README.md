@@ -21,6 +21,13 @@ The Coderr Backend is a robust REST API built with Django and the Django REST Fr
   - Update and manage user profiles.
 - **Review System:**
   - Business users can receive and manage reviews.
+- **Offers:**
+  - Create, update, and delete offers.
+  - Retrieve details of specific offers.
+- **Orders:**
+  - Create, update, and delete orders.
+  - Retrieve details of specific orders.
+  - Track order status and counts.
 
 ## Installation
 
@@ -39,7 +46,7 @@ The Coderr Backend is a robust REST API built with Django and the Django REST Fr
 3. **Create and activate a virtual environment:**
    
    ```bash
-   python -m venv env
+   python -m env env
    source env/bin/activate  # On Unix/Mac
    env\Scripts\activate     # On Windows
    ```
@@ -111,6 +118,9 @@ The Coderr Backend is a robust REST API built with Django and the Django REST Fr
   - `PATCH /api/offers/{id}/`: Update a specific offer.
   - `DELETE /api/offers/{id}/`: Delete a specific offer.
   - `GET /api/offerdetails/{id}/`: Retrieve details of a specific offer.
+
+- **Base Info**
+  - `GET /api/base-info/`: Retrieve base information including offer count, review count, average rating, and business profile count.
 
 ## Testing
 
