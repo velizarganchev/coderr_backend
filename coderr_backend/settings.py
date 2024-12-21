@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'offers_app',
     'user_auth_app',
     'orders_app',
-    'reviews_app',
+    'reviews_app',  
     "corsheaders",
     'rest_framework',
     'rest_framework.authtoken',

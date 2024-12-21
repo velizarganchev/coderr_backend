@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import PermissionDenied
 
 from offers_app.models import OfferDetail, Feature
 from ..models import Order
@@ -93,7 +94,7 @@ class OrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'error': 'Ungültiges Token'})
 
         if current_user != instance.business_user:
-            raise serializers.ValidationError(
+            raise PermissionDenied(
                 {'error': 'Nur der Business-Benutzer kann den Status aktualisieren'}
             )
 
