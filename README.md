@@ -2,6 +2,8 @@
 
 The Coderr Backend is a robust REST API built with Django and the Django REST Framework (DRF). It provides functionalities such as user authentication, password reset, profile management, and review systems for business users.
 
+## Frontend - Coderr_frontend_v1.1.0 
+
 ## Table of Contents
 
 - [Features](#features)
