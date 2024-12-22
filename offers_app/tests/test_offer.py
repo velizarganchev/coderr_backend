@@ -22,7 +22,6 @@ class OfferTests(APITestCase):
             'single_offer_details', kwargs={'pk': pk})
 
     def test_create_offer(self):
-        # Create features first
         feature1 = Feature.objects.create(name="Feature 1")
         feature2 = Feature.objects.create(name="Feature 2")
 

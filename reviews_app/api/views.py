@@ -1,11 +1,11 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import filters
 from rest_framework.response import Response
-from django.db.models import Q
-
 from ..models import Review
 from .serializers import ReviewSerializer
+
 
 class Review_View(generics.ListCreateAPIView):
     """
@@ -17,13 +17,10 @@ class Review_View(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['business_user_id']
-    ordering_fields = ['updated_at']
+    filterset_fields = ['business_user_id', 'reviewer_id']
+    ordering_fields = ['updated_at', 'rating']
     ordering = ['-updated_at']
 
-    def get_queryset(self):
-        user = self.request.user
-        return Review.objects.filter(Q(business_user=user) | Q(reviewer=user))
 
 class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -33,3 +30,26 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+    def delete(self, request, pk):
+        """
+        Handle deletion of an review.
+        """
+        try:
+            review = Review.objects.get(pk=pk)
+        except Review.DoesNotExist:
+            return Response(
+                {"error": "Bewertung nicht gefunden."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not request.user == review.reviewer:
+            raise PermissionDenied(
+                {"error": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
+            )
+
+        Review.delete()
+        return Response(
+            {"message": "Bewertung erfolgreich gelöscht."},
+            status=status.HTTP_204_NO_CONTENT
+        )

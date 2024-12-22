@@ -1,6 +1,9 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 from django.db.models import Q
 
@@ -23,32 +26,29 @@ class Offer_View(generics.ListCreateAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
     pagination_class = OfferPagination
+    filter_backends = [DjangoFilterBackend,
+                       filters.OrderingFilter, filters.SearchFilter]
+
+    search_fields = ['title', 'description']
+    ordering_fields = ['min_price', 'updated_at']
+    ordering = ['min_price']
 
     def get_queryset(self):
         queryset = super().get_queryset()
 
         creator_id = self.request.query_params.get('creator_id')
+        search = self.request.query_params.get('search')
+        max_delivery_time = self.request.query_params.get('max_delivery_time')
+
+        if not creator_id and not search and not max_delivery_time:
+            return queryset.none()
+
         if creator_id:
             queryset = queryset.filter(user_id=creator_id)
 
-        min_price = self.request.query_params.get('min_price')
-        if min_price:
-            queryset = queryset.filter(min_price__gte=min_price)
-
-        max_delivery_time = self.request.query_params.get('max_delivery_time')
         if max_delivery_time:
             queryset = queryset.filter(
                 min_delivery_time__lte=max_delivery_time)
-
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search) | Q(description__icontains=search)
-            )
-
-        ordering = self.request.query_params.get('ordering')
-        if ordering:
-            queryset = queryset.order_by(ordering)
 
         return queryset
 
@@ -75,6 +75,29 @@ class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Offer.objects.all()
     serializer_class = SingleOfferSerializer
+
+    def delete(self, request, pk):
+        """
+        Handle deletion of an offer.
+        """
+        try:
+            offer = Offer.objects.get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response(
+                {"error": "Angebot nicht gefunden."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not request.user == offer.user:
+            raise PermissionDenied(
+                {"error": "Sie haben keine Berechtigung, dieses Angebot zu löschen."}
+            )
+
+        offer.delete()
+        return Response(
+            {"message": "Angebot erfolgreich gelöscht."},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class SingleOfferDetails_View(generics.RetrieveAPIView):

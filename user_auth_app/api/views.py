@@ -15,7 +15,7 @@ class UserProfileType_View(APIView):
     """
     API view to retrieve user profiles by type.
     """
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, type=None, format=None):
         if type:
@@ -30,57 +30,84 @@ class UserProfile_View(APIView):
     """
     API view to retrieve, update, or delete user profiles.
     """
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
+    def get_user_profile(self, uid):
+        """
+        Helper method to retrieve a user profile based on user ID.
+        """
+        try:
+            user = User.objects.get(pk=uid)
+            return UserProfile.objects.get(user=user)
+        except (User.DoesNotExist, UserProfile.DoesNotExist):
+            return None
 
     def get(self, request, uid=None, format=None):
+        """
+        Retrieve a user profile or all user profiles if no UID is provided.
+        """
         if uid:
-            try:
-                user = User.objects.get(pk=uid)
-                userprofile = UserProfile.objects.get(user=user)
-                serializer = UserProfileSerializer(userprofile)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except UserProfile.DoesNotExist:
-                return Response({'status': 'error', 'message': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+            userprofile = self.get_user_profile(uid)
+            if not userprofile:
+                return Response({'status': 'error', 'message': 'User Profile not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            serializer = UserProfileSerializer(userprofile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             userprofiles = UserProfile.objects.all()
             serializer = UserProfileSerializer(userprofiles, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, uid=None, format=None):
-        try:
-            user = User.objects.get(pk=uid)
-            userprofile = UserProfile.objects.get(user=user)
-        except UserProfile.DoesNotExist:
-            return Response({'status': 'error', 'message': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = UserProfileSerializer(
-            userprofile, data=request.data, partial=True)
+        """
+        Fully update a user profile.
+        """
+        userprofile = self.get_user_profile(uid)
+        if not userprofile:
+            return Response({'status': 'error', 'message': 'User Profile not found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        serializer = UserProfileSerializer(userprofile, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'status': 'error', 'message': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'status': 'error', 'message': serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, uid=None, format=None):
-        try:
-            user = User.objects.get(pk=uid)
-            userprofile = UserProfile.objects.get(user=user)
-        except UserProfile.DoesNotExist:
-            return Response({'status': 'error', 'message': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
-
+        """
+        Partially update a user profile.
+        """
+        userprofile = self.get_user_profile(uid)
+        if not userprofile:
+            return Response({'status': 'error', 'message': 'User Profile not found'},
+                            status=status.HTTP_404_NOT_FOUND)
         serializer = UserProfileSerializer(
             userprofile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'status': 'error', 'message': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'status': 'error', 'message': serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
-        user = request.user
+    def delete(self, request, uid=None, format=None):
+        """
+        Delete a user and their profile.
+        """
+        if not request.user.is_staff and request.user.id != uid:
+            return Response({'status': 'error', 'message': 'Permission denied'},
+                            status=status.HTTP_403_FORBIDDEN)
+
         try:
+            user = User.objects.get(pk=uid)
             user.delete()
-            return Response({'status': 'success', 'message': 'User and User Profile deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'status': 'success', 'message': 'User and User Profile deleted successfully.'},
+                            status=status.HTTP_204_NO_CONTENT)
+        except User.DoesNotExist:
+            return Response({'status': 'error', 'message': 'User not found'},
+                            status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'status': 'error', 'message': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'status': 'error', 'message': f'Error: {str(e)}'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserRegister_View(APIView):
@@ -88,6 +115,7 @@ class UserRegister_View(APIView):
     API view to register a new user.
     """
     # permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username')
         email = request.data.get('email')

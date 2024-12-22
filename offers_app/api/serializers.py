@@ -265,7 +265,7 @@ class SingleOfferSerializer(serializers.ModelSerializer):
         instance.save()
 
     def update_offer_fields(self, instance, validated_data):
-        OFFER_FIELDS = ['title', 'image', 'description',
+        OFFER_FIELDS = ['title', 'image', 'description', 'updated_at',
                         'min_price', 'min_delivery_time']
         for field in OFFER_FIELDS:
             setattr(instance, field, validated_data.get(
@@ -311,7 +311,7 @@ class SingleOfferSerializer(serializers.ModelSerializer):
         """
         Updates fields and features for an existing OfferDetail instance.
         """
-        for field in ['title', 'revisions', 'delivery_time_in_days', 'price',   'offer_type']:
+        for field in ['title', 'revisions', 'delivery_time_in_days', 'price', 'offer_type']:
             setattr(offer_detail, field, detail_data.get(
                 field, getattr(offer_detail, field)))
 

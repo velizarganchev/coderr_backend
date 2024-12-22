@@ -1,5 +1,6 @@
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
 from ..models import Order
 from .serializers import OrderSerializer
@@ -18,6 +19,10 @@ class Orders_View(generics.ListCreateAPIView):
         Return the queryset of orders for the authenticated business user.
         """
         user = self.request.user
+
+        if user.is_staff:
+            return Order.objects.all()
+
         return Order.objects.filter(business_user=user) | Order.objects.filter(customer_user=user)
 
 
@@ -29,6 +34,30 @@ class SingleOrder_View(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    def delete(self, request, pk):
+        """
+        Handle deletion of an order.
+        """
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Bestellung nicht gefunden."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not request.user.is_staff:
+            raise PermissionDenied(
+                {"error": "Nur Mitarbeiter können Bestellungen löschen."}
+            )
+
+        order.delete()
+
+        return Response(
+            {"message": "Bestellung erfolgreich gelöscht."},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class NotCompletedOrderCount_View(generics.ListAPIView):
