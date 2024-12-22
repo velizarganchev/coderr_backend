@@ -48,7 +48,7 @@ The Coderr Backend is a robust REST API built with Django and the Django REST Fr
    ```bash
    python -m venv env
    source env/bin/activate  # On Unix/Mac
-   env\Scripts\activate     # On Windows
+   "env\Scripts\activate"   # On Windows
    ```
 
 4. **Install the required dependencies:**
