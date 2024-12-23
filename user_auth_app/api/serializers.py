@@ -57,12 +57,12 @@ class UserProfileTypeSerializer(serializers.ModelSerializer):
     Serializer for the UserProfile model filtered by type.
     """
     user = UserSerializer()
-    created_at = serializers.DateTimeField(source='user.date_joined')
+    uploaded_at = serializers.DateTimeField(source='user.date_joined')
 
     class Meta:
         model = UserProfile
         fields = ['user', 'file', 'location', 'tel',
-                  'description', 'working_hours', 'type', 'created_at']
+                  'description', 'working_hours', 'type', 'uploaded_at']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -70,7 +70,7 @@ class UserProfileTypeSerializer(serializers.ModelSerializer):
             return {
                 'user': representation['user'],
                 'file': representation['file'],
-                'created_at': representation['created_at'],
+                'uploaded_at': representation['uploaded_at'],
                 'type': representation['type']
             }
         return representation

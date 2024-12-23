@@ -9,7 +9,15 @@ from .serializers import ReviewSerializer
 
 class Review_View(generics.ListCreateAPIView):
     """
-    API view to list and create reviews.
+    Review_View is a view for listing and creating reviews.
+    Attributes:
+        permission_classes (list): Specifies that the view requires the user to be authenticated.
+        queryset (QuerySet): Defines the base queryset for retrieving reviews.
+        serializer_class (Serializer): Specifies the serializer to be used for the reviews.
+        filter_backends (list): Specifies the backends to be used for filtering and ordering.
+        filterset_fields (list): Defines the fields that can be used for filtering the reviews.
+        ordering_fields (list): Defines the fields that can be used for ordering the reviews.
+        ordering (list): Specifies the default ordering for the reviews.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -24,8 +32,15 @@ class Review_View(generics.ListCreateAPIView):
 
 class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
     """
-    API view to retrieve, update, or delete a single review.
+    SingleReview_View is a view for retrieving, updating, and deleting a single review.
+    Attributes:
+        permission_classes (list): A list of permission classes that the user must pass to access this view.
+        queryset (QuerySet): The queryset that retrieves all Review objects.
+        serializer_class (Serializer): The serializer class used for validating and deserializing input, and for serializing output.
+    Methods:
+        delete(request, pk):
     """
+
     permission_classes = [permissions.IsAuthenticated]
 
     queryset = Review.objects.all()
@@ -33,23 +48,36 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, pk):
         """
-        Handle deletion of an review.
+        Deletes a review with the given primary key (pk) if the requesting user is the reviewer.
+        Args:
+            request (Request): The HTTP request object containing user information.
+            pk (int): The primary key of the review to be deleted.
+        Returns:
+            Response: A response object with a success message and HTTP status 204 if the review is deleted.
+                      A response object with an error message and HTTP status 404 if the review is not found.
+                      Raises PermissionDenied if the user is not the reviewer of the review.
         """
+        user = request.user
+
         try:
             review = Review.objects.get(pk=pk)
+            if not user == review.reviewer:
+                raise PermissionDenied(
+                    {"detail": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
+                )
         except Review.DoesNotExist:
             return Response(
-                {"error": "Bewertung nicht gefunden."},
+                {"detail": "Bewertung nicht gefunden."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
         if not request.user == review.reviewer:
             raise PermissionDenied(
-                {"error": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
+                {"detail": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
             )
 
         Review.delete()
         return Response(
-            {"message": "Bewertung erfolgreich gelöscht."},
+            {"detail": "Bewertung erfolgreich gelöscht."},
             status=status.HTTP_204_NO_CONTENT
         )

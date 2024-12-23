@@ -10,6 +10,7 @@ class OrderSerializer(serializers.ModelSerializer):
     """
     Serializer for the Order model.
     """
+
     class Meta:
         model = Order
         fields = [
@@ -20,44 +21,54 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ['customer_user', 'business_user', 'title', 'revisions',
                             'delivery_time_in_days', 'price', 'offer_type', 'features']
 
+    @staticmethod
+    def get_current_user_from_request(context):
+        """
+        Helper function to extract and validate the user from the request.
+        """
+        request = context.get('request')
+        if not request:
+            raise serializers.ValidationError(
+                {'error': 'Request context fehlt.'}
+            )
+
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Token '):
+            raise serializers.ValidationError(
+                {'error': 'Token ist erforderlich'}
+            )
+
+        token_key = auth_header.split(' ')[1]
+        try:
+            return Token.objects.get(key=token_key).user
+        except Token.DoesNotExist:
+            raise serializers.ValidationError({'error': 'Ungültiges Token'})
+
     def create(self, validated_data):
         """
         Create a new order instance.
         """
-        request = self.context.get('request')
-        token_key = None
-        customer_user = None
-        if request:
-            auth_header = request.headers.get('Authorization')
-            if auth_header and ' ' in auth_header:
-                token_key = auth_header.split(' ')[1]
-
-        if not token_key:
-            raise serializers.ValidationError(
-                {'error': 'Token ist erforderlich'})
-
-        try:
-            customer_user = Token.objects.get(key=token_key).user
-        except Token.DoesNotExist:
-            raise serializers.ValidationError({'error': 'Ungültiges Token'})
-
-        offer_detail_id = self.context['request'].data.get('offer_detail_id')
-        if not offer_detail_id:
-            raise serializers.ValidationError(
-                {'error': 'offer_detail_id is required'})
-
-        try:
-            offer_detail = OfferDetail.objects.get(id=offer_detail_id)
-        except OfferDetail.DoesNotExist:
-            raise serializers.ValidationError(
-                {'error': 'Invalid offer_detail_id'})
-
-        business_user = offer_detail.offer.user
+        customer_user = self.get_current_user_from_request(self.context)
 
         if customer_user.userprofile.type == 'business':
             raise serializers.ValidationError(
                 {'error': 'Nur Kunden können Bestellungen aufgeben'}
             )
+
+        offer_detail_id = self.context['request'].data.get('offer_detail_id')
+        if not offer_detail_id:
+            raise serializers.ValidationError(
+                {'error': 'offer_detail_id is required'}
+            )
+
+        try:
+            offer_detail = OfferDetail.objects.get(id=offer_detail_id)
+        except OfferDetail.DoesNotExist:
+            raise serializers.ValidationError(
+                {'error': 'Invalid offer_detail_id'}
+            )
+
+        business_user = offer_detail.offer.user
 
         order = Order.objects.create(
             customer_user=customer_user,
@@ -75,23 +86,7 @@ class OrderSerializer(serializers.ModelSerializer):
         """
         Update an existing order instance.
         """
-        request = self.context.get('request')
-        token_key = None
-        current_user = None
-
-        if request:
-            auth_header = request.headers.get('Authorization')
-            if auth_header and ' ' in auth_header:
-                token_key = auth_header.split(' ')[1]
-
-        if not token_key:
-            raise serializers.ValidationError(
-                {'error': 'Token ist erforderlich'})
-
-        try:
-            current_user = Token.objects.get(key=token_key).user
-        except Token.DoesNotExist:
-            raise serializers.ValidationError({'error': 'Ungültiges Token'})
+        current_user = self.get_current_user_from_request(self.context)
 
         if current_user != instance.business_user:
             raise PermissionDenied(
@@ -99,9 +94,7 @@ class OrderSerializer(serializers.ModelSerializer):
             )
 
         instance.status = validated_data.get('status', instance.status)
-
         instance.save()
-
         return instance
 
     def to_representation(self, instance):

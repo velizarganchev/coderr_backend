@@ -75,7 +75,7 @@ class NotCompletedOrderCount_View(generics.ListAPIView):
         """
         order_count = Order.objects.filter(
             status__in=['in_progress', 'cancelled']).count()
-        return Response({'order_coun': order_count}, status=status.HTTP_200_OK)
+        return Response({'order_count': order_count}, status=status.HTTP_200_OK)
 
 
 class CompletedOrderCount_View(generics.ListAPIView):

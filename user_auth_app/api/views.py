@@ -18,12 +18,24 @@ class UserProfileType_View(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, type=None, format=None):
+        """
+        Handles GET requests to retrieve user profiles based on the specified type.
+
+        Args:
+            request (Request): The HTTP request object.
+            type (str, optional): The type of user profiles to filter by. Defaults to None.
+            format (str, optional): The format of the response. Defaults to None.
+
+        Returns:
+            Response: A Response object containing serialized user profiles if type is provided,
+                      or an error message if type is not provided.
+        """
         if type:
             userprofiles = UserProfile.objects.filter(type=type)
             serializer = UserProfileTypeSerializer(userprofiles, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'status': 'error', 'message': 'Type is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Typ ist erforderlich.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfile_View(APIView):
@@ -34,7 +46,13 @@ class UserProfile_View(APIView):
 
     def get_user_profile(self, uid):
         """
-        Helper method to retrieve a user profile based on user ID.
+        Retrieve the user profile for a given user ID.
+
+        Args:
+            uid (int): The unique identifier of the user.
+
+        Returns:
+            UserProfile: The user profile associated with the given user ID, or None if the user or user profile does not exist.
         """
         try:
             user = User.objects.get(pk=uid)
@@ -44,12 +62,22 @@ class UserProfile_View(APIView):
 
     def get(self, request, uid=None, format=None):
         """
-        Retrieve a user profile or all user profiles if no UID is provided.
+        Retrieve user profile(s).
+        If a user ID (uid) is provided, retrieve the specific user profile.
+        If no user ID is provided, retrieve all user profiles.
+        Args:
+            request (Request): The HTTP request object.
+            uid (str, optional): The user ID. Defaults to None.
+            format (str, optional): The format of the response. Defaults to None.
+        Returns:
+            Response: A Response object containing the serialized user profile data
+                      and the appropriate HTTP status code.
         """
+
         if uid:
             userprofile = self.get_user_profile(uid)
             if not userprofile:
-                return Response({'status': 'error', 'message': 'User Profile not found'},
+                return Response({'detail': 'User Profile not found'},
                                 status=status.HTTP_404_NOT_FOUND)
             serializer = UserProfileSerializer(userprofile)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -60,54 +88,96 @@ class UserProfile_View(APIView):
 
     def put(self, request, uid=None, format=None):
         """
-        Fully update a user profile.
+        Update the user profile with the given UID.
+        Args:
+            request (Request): The HTTP request object containing the data to update the user profile.
+            uid (int, optional): The unique identifier of the user profile to update. Defaults to None.
+            format (str, optional): The format of the request data. Defaults to None.
+        Returns:
+            Response: A Response object with the updated user profile data if successful,
+                      or an error message with the appropriate HTTP status code.
+        Raises:
+            HTTP_404_NOT_FOUND: If the user profile with the given UID is not found.
+            HTTP_403_FORBIDDEN: If the requesting user does not have permission to update the profile.
+            HTTP_400_BAD_REQUEST: If the provided data is invalid.
         """
         userprofile = self.get_user_profile(uid)
+        user = request.user
+
         if not userprofile:
-            return Response({'status': 'error', 'message': 'User Profile not found'},
+            return Response({'detail': 'Benutzerprofil nicht gefunden'},
                             status=status.HTTP_404_NOT_FOUND)
+
+        if not userprofile.user.id or userprofile.user.id != user.id:
+            return Response(
+                {'detail': 'Zugriff verweigert.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = UserProfileSerializer(userprofile, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'status': 'error', 'message': serializer.errors},
+        return Response({'detail': serializer.errors},
                         status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, uid=None, format=None):
         """
-        Partially update a user profile.
+        Partially updates a user profile.
+        Args:
+            request (Request): The HTTP request object containing the data for the update.
+            uid (int, optional): The user ID of the profile to update. Defaults to None.
+            format (str, optional): The format of the request. Defaults to None.
+        Returns:
+            Response: A Response object containing the updated user profile data if successful,
+                      or an error message with the appropriate HTTP status code if not.
+        Raises:
+            HTTP_404_NOT_FOUND: If the user profile is not found.
+            HTTP_403_FORBIDDEN: If the requesting user does not have permission to update the profile.
+            HTTP_400_BAD_REQUEST: If the provided data is invalid.
         """
         userprofile = self.get_user_profile(uid)
+        user = request.user
+
         if not userprofile:
-            return Response({'status': 'error', 'message': 'User Profile not found'},
+            return Response({'detail': 'Benutzerprofil nicht gefunden'},
                             status=status.HTTP_404_NOT_FOUND)
+
+        if not userprofile.user.id or userprofile.user.id != user.id:
+            return Response(
+                {'detail': 'Zugriff verweigert.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = UserProfileSerializer(
             userprofile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'status': 'error', 'message': serializer.errors},
+        return Response({'detail': serializer.errors},
                         status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, uid=None, format=None):
         """
-        Delete a user and their profile.
+        Deletes a user and their profile.
+        Args:
+            request (Request): The HTTP request object.
+            uid (int, optional): The unique identifier of the user to be deleted. Defaults to None.
+            format (str, optional): The format of the response. Defaults to None.
+        Returns:
+            Response: A response object with a status code indicating the result of the delete operation.
+                - 204 No Content: If the user and their profile were successfully deleted.
+                - 403 Forbidden: If the requesting user is not staff and does not match the user ID to be deleted.
+                - 404 Not Found: If the user with the specified ID does not exist.
         """
         if not request.user.is_staff and request.user.id != uid:
-            return Response({'status': 'error', 'message': 'Permission denied'},
+            return Response({'detail': 'Zugriff verweigert'},
                             status=status.HTTP_403_FORBIDDEN)
 
         try:
             user = User.objects.get(pk=uid)
             user.delete()
-            return Response({'status': 'success', 'message': 'User and User Profile deleted successfully.'},
+            return Response({'detail': 'Benutzer und Benutzerprofil erfolgreich gelöscht.'},
                             status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
-            return Response({'status': 'error', 'message': 'User not found'},
+            return Response({'detail': 'Benutzer nicht gefunden'},
                             status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'status': 'error', 'message': f'Error: {str(e)}'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserRegister_View(APIView):
@@ -117,6 +187,18 @@ class UserRegister_View(APIView):
     # permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        Handle POST request for user registration.
+        This method handles the registration of a new user. It validates the provided
+        registration data, creates a new user, assigns a user profile type, generates
+        an authentication token, and returns the token along with user details.
+        Args:
+            request (Request): The HTTP request object containing registration data.
+        Returns:
+            Response: A Response object containing the authentication token, username,
+                      email, and user ID if registration is successful, or an error
+                      message if validation fails.
+        """
         username = request.data.get('username')
         email = request.data.get('email')
         password = request.data.get('password')
@@ -143,6 +225,17 @@ class UserRegister_View(APIView):
         }, status=status.HTTP_201_CREATED)
 
     def validate_registration_data(self, username, email, password, repeated_password):
+        """
+        Validates the registration data provided by the user.
+        Args:
+            username (str): The username provided by the user.
+            email (str): The email address provided by the user.
+            password (str): The password provided by the user.
+            repeated_password (str): The repeated password provided by the user.
+        Returns:
+            list: A list of error messages, if any validation checks fail. 
+                  If the list is empty, the registration data is valid.
+        """
         error_message_list = []
 
         if not username or not email or not password or not repeated_password:
@@ -171,6 +264,17 @@ class UserLogin_View(APIView):
     # permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        Handle POST request for user authentication.
+        Args:
+            request (Request): The HTTP request object containing 'username' and 'password' in the data.
+        Returns:
+            Response: A Response object containing a token and user details if authentication is successful,
+                      or an error message if authentication fails.
+        Raises:
+            HTTP_401_UNAUTHORIZED: If 'username' or 'password' is not provided, or if authentication fails.
+            HTTP_404_NOT_FOUND: If the user with the provided 'username' does not exist.
+        """
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -181,7 +285,7 @@ class UserLogin_View(APIView):
                 'Benutzername and Password sind erforderlich.')
             return Response(
                 {'detail': error_message_list},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
         try:
@@ -189,7 +293,7 @@ class UserLogin_View(APIView):
         except User.DoesNotExist:
             error_message_list.append('Benutzer existiert nicht.')
             return Response(
-                {'message': error_message_list},
+                {'detail': error_message_list},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -216,9 +320,20 @@ class UserLogout_View(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """
+        Handle POST request to log out a user by deleting their authentication token.
+
+        Args:
+            request (Request): The HTTP request object containing user information.
+
+        Returns:
+            Response: A response indicating the result of the logout operation.
+                - 200 OK: If the token was successfully deleted.
+                - 400 Bad Request: If the token does not exist.
+        """
         try:
             token = Token.objects.get(user=request.user)
             token.delete()
-            return Response({'detail': 'User logged out successfully.'}, status=status.HTTP_200_OK)
+            return Response({'detail': 'Benutzer erfolgreich abgemeldet.'}, status=status.HTTP_200_OK)
         except Token.DoesNotExist:
-            return Response({'detail': 'Token does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Token existiert nicht.'}, status=status.HTTP_400_BAD_REQUEST)

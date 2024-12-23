@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from ..models import Offer, OfferDetail, Feature
@@ -41,7 +41,6 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         features = [
             Feature.objects.get_or_create(
                 name=feature.get('name', '').strip())[0]
-            # Skip invalid entries
             for feature in features_data if feature.get('name')
         ]
         offer_detail.features.set(features)
@@ -62,7 +61,6 @@ class OfferDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
 
-        # Transform `features` field
         features_representation = [
             feature.name for feature in instance.features.all()]
         representation['features'] = features_representation
@@ -74,7 +72,7 @@ class OfferSerializer(serializers.ModelSerializer):
     """
     Serializer for the Offer model.
     """
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.id')
     details = OfferDetailSerializer(many=True)
     user_details = serializers.SerializerMethodField('get_user_details_field')
 
@@ -94,17 +92,40 @@ class OfferSerializer(serializers.ModelSerializer):
             'user_details'
         ]
 
-    def create(self, validated_data):
+    def validate_business_user(self):
+        """
+        Validates the business user based on the request context.
+        """
         request = self.context.get('request')
         token_key = request.headers.get('Authorization').split(' ')[
             1] if request else None
-        user = Token.objects.get(key=token_key).user if token_key else None
-        details_data = validated_data.pop('details', [])
+
+        if not token_key:
+            raise serializers.ValidationError(
+                {'detail': 'Authorization token fehlt.'},
+                code=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            user = Token.objects.get(key=token_key).user
+        except Token.DoesNotExist:
+            raise serializers.ValidationError(
+                {'detail': 'Ungültiges Token.'},
+                code=status.HTTP_401_UNAUTHORIZED
+            )
 
         if user.userprofile.type != 'business':
             raise serializers.ValidationError(
-                {'error': 'Nur Geschäftskunden können Angebote erstellen'})
+                {'detail': 'Nur Geschäftskunden können Angebote erstellen.'},
+                code=status.HTTP_401_UNAUTHORIZED
+            )
 
+        return user
+
+    def create(self, validated_data):
+        user = self.validate_business_user()
+
+        details_data = validated_data.pop('details', [])
         offer = Offer.objects.create(user=user, **validated_data)
 
         min_price = None
@@ -121,13 +142,11 @@ class OfferSerializer(serializers.ModelSerializer):
             ]
             offer_detail.features.set(features)
 
-            # Update min_price and min_delivery_time
             if min_price is None or offer_detail.price < min_price:
                 min_price = offer_detail.price
             if min_delivery_time is None or offer_detail.delivery_time_in_days < min_delivery_time:
                 min_delivery_time = offer_detail.delivery_time_in_days
 
-        # Set the calculated values on the Offer instance
         offer.min_price = min_price
         offer.min_delivery_time = min_delivery_time
         offer.save()
@@ -141,12 +160,10 @@ class OfferSerializer(serializers.ModelSerializer):
         if (request and request.method == 'POST'):
             details = []
             for detail in instance.details.all():
-                # Korrigiere hier die Verarbeitung der Features
                 features = []
                 for feature in detail.features.all():
                     if isinstance(feature.name, str):
                         try:
-                            # Entferne geschachtelte Strings, falls vorhanden
                             cleaned_name = eval(feature.name) if feature.name.startswith(
                                 "{") else feature.name
                             features.append(cleaned_name)
@@ -212,6 +229,29 @@ class SingleOfferSerializer(serializers.ModelSerializer):
             'user_details'
         ]
 
+    @staticmethod
+    def get_current_user_from_request(context):
+        """
+        Helper function to extract and validate the user from the request.
+        """
+        request = context.get('request')
+        if not request:
+            raise serializers.ValidationError(
+                {'error': 'Request context fehlt.'}
+            )
+
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Token '):
+            raise serializers.ValidationError(
+                {'error': 'Token ist erforderlich'}
+            )
+
+        token_key = auth_header.split(' ')[1]
+        try:
+            return Token.objects.get(key=token_key).user
+        except Token.DoesNotExist:
+            raise serializers.ValidationError({'error': 'Ungültiges Token'})
+
     def get_user_details_field(self, obj):
         return {
             "first_name": obj.user.first_name,
@@ -240,6 +280,13 @@ class SingleOfferSerializer(serializers.ModelSerializer):
         return representation
 
     def update(self, instance, validated_data):
+        user = self.get_current_user_from_request(self.context)
+        if user != instance.user:
+            raise serializers.ValidationError(
+                {'detail': 'Nur der Ersteller kann das Angebot aktualisieren.'},
+                code=status.HTTP_403_FORBIDDEN
+            )
+
         details_data = validated_data.pop('details', [])
         self.update_offer_fields(instance, validated_data)
         self.update_offer_details(instance, details_data)
@@ -296,7 +343,7 @@ class SingleOfferSerializer(serializers.ModelSerializer):
 
     def create_offer_detail(self, instance, detail_data):
         """
-        Creates a new OfferDetail instance and associates it with the given     offer.
+        Creates a new OfferDetail instance and associates it with the given offer.
         """
         features_data = detail_data.pop('features', [])
         new_detail = OfferDetail.objects.create(offer=instance, **detail_data)

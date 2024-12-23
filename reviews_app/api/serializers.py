@@ -1,4 +1,5 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from ..models import Review
 
@@ -17,40 +18,116 @@ class ReviewSerializer(serializers.ModelSerializer):
             'rating',
             'description',
             'created_at',
-            'updated_at'
+            'updated_at',
         ]
         read_only_fields = ['reviewer']
 
-    def create(self, validated_data):
+    def validate_customer(self):
         """
-        Create a new review instance.
+        Validates the customer based on the request context and authorization token.
+        Raises:
+            ValidationError: If the request context is missing.
+            ValidationError: If the authorization token is missing or invalid.
+            ValidationError: If the token does not correspond to a valid user.
+            ValidationError: If the user is not of type 'customer'.
+        Returns:
+            User: The authenticated user if validation is successful.
         """
         request = self.context.get('request')
 
-        token_key = None
-        if request:
-            auth_header = request.headers.get('Authorization')
-            if auth_header and auth_header.startswith('Token '):
-                token_key = auth_header.split(' ')[1]
+        if not request:
+            raise ValidationError({'detail': 'Request context fehlt.'})
 
-        if not token_key:
-            raise serializers.ValidationError({'error': 'Token is required'})
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Token '):
+            raise ValidationError(
+                {'detail': 'Authorization token fehlt.'},
+                code=status.HTTP_401_UNAUTHORIZED
+            )
 
+        token_key = auth_header.split(' ')[1]
         try:
             user = Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise serializers.ValidationError({'error': 'Invalid token'})
-
-        business_user = validated_data.get('business_user')
-        if not business_user:
-            raise serializers.ValidationError(
-                {'error': 'The business_user field is required.'}
+            raise ValidationError(
+                {'detail': 'Ungültiges Token.'},
+                code=status.HTTP_401_UNAUTHORIZED
             )
+
+        if user.userprofile.type != 'customer':
+            raise ValidationError(
+                {'detail': 'Nur Kunden können diese Aktion ausführen.'},
+                code=status.HTTP_403_FORBIDDEN
+            )
+
+        return user
+
+    def validate_business_user(self, business_user):
+        """
+        Validate the business user.
+        This method checks if the provided business user is valid and active.
+        If the business user is not provided or is not active, a ValidationError
+        is raised with an appropriate error message.
+        Args:
+            business_user (User): The business user to validate.
+        Returns:
+            User: The validated business user.
+        Raises:
+            ValidationError: If the business user is not provided or is not active.
+        """
+        if not business_user:
+            raise ValidationError(
+                {'detail': 'Das Feld business_user ist erforderlich.'})
+
+        if not business_user.is_active:
+            raise ValidationError(
+                {'detail': 'Das Unternehmen ist nicht aktiv.'})
+
+        return business_user
+
+    def create(self, validated_data):
+        """
+        Creates a new review instance.
+        This method validates the customer and business user from the provided
+        validated data. It ensures that the user has not already reviewed the
+        specified business user. If a review already exists, a ValidationError
+        is raised.
+        Args:
+            validated_data (dict): The validated data containing the review details.
+        Returns:
+            Review: The newly created review instance.
+        Raises:
+            ValidationError: If the user has already reviewed the business user.
+        """
+        user = self.validate_customer()
+
+        business_user = self.validate_business_user(
+            validated_data.get('business_user'))
 
         if Review.objects.filter(business_user=business_user, reviewer=user).exists():
-            raise serializers.ValidationError(
-                {'error': 'You have already reviewed this business.'}
-            )
+            raise ValidationError(
+                {'detail': 'Sie können dieses Unternehmen nur einmal bewerten.'})
 
         review = Review.objects.create(reviewer=user, **validated_data)
         return review
+
+    def update(self, instance, validated_data):
+        """
+        Update the review instance with validated data if the user is the reviewer.
+        Args:
+            instance (Model): The review instance to be updated.
+            validated_data (dict): The data that has been validated and will be used to update the instance.
+        Raises:
+            ValidationError: If the user is not the reviewer of the instance.
+        Returns:
+            Model: The updated review instance.
+        """
+        user = self.validate_customer()
+
+        if not user == instance.reviewer:
+            raise ValidationError(
+                {'detail': 'Sie haben keine Berechtigung, diese Bewertung zu bearbeiten.'},
+                code=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(instance, validated_data)

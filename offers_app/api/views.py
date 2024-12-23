@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -23,6 +23,7 @@ class Offer_View(generics.ListCreateAPIView):
     API view to list and create offers.
     """
     permission_classes = [permissions.IsAuthenticated]
+
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
     pagination_class = OfferPagination
@@ -76,31 +77,30 @@ class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
     queryset = Offer.objects.all()
     serializer_class = SingleOfferSerializer
 
-    def delete(self, request, pk):
+    def perform_destroy(self, instance):
         """
-        Handle deletion of an offer.
+        Custom deletion logic.
+        """
+        if not self.request.user == instance.user:
+            raise PermissionDenied(
+                {"detail": "Sie haben keine Berechtigung, dieses Angebot zu löschen."}
+            )
+        instance.delete()
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Override delete to provide a custom error message if the object doesn't exist.
         """
         try:
-            offer = Offer.objects.get(pk=pk)
-        except Offer.DoesNotExist:
+            return super().delete(request, *args, **kwargs)
+        except NotFound:
             return Response(
-                {"error": "Angebot nicht gefunden."},
+                {"detail": "Angebot nicht gefunden."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if not request.user == offer.user:
-            raise PermissionDenied(
-                {"error": "Sie haben keine Berechtigung, dieses Angebot zu löschen."}
-            )
 
-        offer.delete()
-        return Response(
-            {"message": "Angebot erfolgreich gelöscht."},
-            status=status.HTTP_204_NO_CONTENT
-        )
-
-
-class SingleOfferDetails_View(generics.RetrieveAPIView):
+class SingleOfferDetails_View(generics.RetrieveUpdateDestroyAPIView):
     """
     API view to retrieve details of a single offer.
     """
