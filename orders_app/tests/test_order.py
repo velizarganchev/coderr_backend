@@ -84,9 +84,12 @@ class OrderTests(APITestCase):
         self.assertEqual(order.status, "completed")
 
     def test_delete_order(self):
+        self.user.is_staff = True
+        self.user.save()
         order = Order.objects.create(
             customer_user=self.user, business_user=self.business_user, title="Basic Package",
             revisions=2, delivery_time_in_days=5, price=100, offer_type="basic")
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         response = self.client.delete(self.single_order_url(order.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Order.objects.count(), 0)
@@ -98,7 +101,7 @@ class OrderTests(APITestCase):
         response = self.client.get(
             self.not_completed_order_count_url(self.user.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['order_coun'], 1)
+        self.assertEqual(response.data['order_count'], 1)
 
     def test_get_completed_order_count(self):
         Order.objects.create(

@@ -6,7 +6,7 @@ from user_auth_app.api.views import UserRegister_View, UserLogin_View, UserLogou
 
 urlpatterns = [
     # URL pattern for user registration
-    path('api/registration/', UserRegister_View.as_view(), name='register'),
+    path('api/registration/', UserRegister_View.as_view(), name='registration'),
     # URL pattern for user login
     path('api/login/', UserLogin_View.as_view(), name='login'),
     # URL pattern for user logout

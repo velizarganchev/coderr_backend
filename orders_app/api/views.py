@@ -43,19 +43,18 @@ class SingleOrder_View(generics.RetrieveUpdateDestroyAPIView):
             order = Order.objects.get(pk=pk)
         except Order.DoesNotExist:
             return Response(
-                {"error": "Bestellung nicht gefunden."},
+                {"detail": "Bestellung nicht gefunden."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
         if not request.user.is_staff:
             raise PermissionDenied(
-                {"error": "Nur Mitarbeiter können Bestellungen löschen."}
+                {"detail": "Nur Mitarbeiter können Bestellungen löschen."}
             )
 
         order.delete()
-
         return Response(
-            {"message": "Bestellung erfolgreich gelöscht."},
+            {"detail": "Bestellung erfolgreich gelöscht."},
             status=status.HTTP_204_NO_CONTENT
         )
 

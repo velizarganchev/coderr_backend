@@ -29,20 +29,20 @@ class OrderSerializer(serializers.ModelSerializer):
         request = context.get('request')
         if not request:
             raise serializers.ValidationError(
-                {'error': 'Request context fehlt.'}
+                {'detail': 'Request context fehlt.'}
             )
 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Token '):
             raise serializers.ValidationError(
-                {'error': 'Token ist erforderlich'}
+                {'detail': 'Token ist erforderlich'}
             )
 
         token_key = auth_header.split(' ')[1]
         try:
             return Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise serializers.ValidationError({'error': 'Ungültiges Token'})
+            raise serializers.ValidationError({'detail': 'Ungültiges Token'})
 
     def create(self, validated_data):
         """
@@ -52,20 +52,20 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if customer_user.userprofile.type == 'business':
             raise serializers.ValidationError(
-                {'error': 'Nur Kunden können Bestellungen aufgeben'}
+                {'detail': 'Nur Kunden können Bestellungen aufgeben'}
             )
 
         offer_detail_id = self.context['request'].data.get('offer_detail_id')
         if not offer_detail_id:
             raise serializers.ValidationError(
-                {'error': 'offer_detail_id is required'}
+                {'detail': 'offer_detail_id is required'}
             )
 
         try:
             offer_detail = OfferDetail.objects.get(id=offer_detail_id)
         except OfferDetail.DoesNotExist:
             raise serializers.ValidationError(
-                {'error': 'Invalid offer_detail_id'}
+                {'detail': 'Invalid offer_detail_id'}
             )
 
         business_user = offer_detail.offer.user
@@ -90,7 +90,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if current_user != instance.business_user:
             raise PermissionDenied(
-                {'error': 'Nur der Business-Benutzer kann den Status aktualisieren'}
+                {'detail': 'Nur der Ersteller kann den Status aktualisieren'}
             )
 
         instance.status = validated_data.get('status', instance.status)

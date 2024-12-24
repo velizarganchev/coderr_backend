@@ -76,7 +76,7 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
                 {"detail": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
             )
 
-        Review.delete()
+        Review.delete(review)
         return Response(
             {"detail": "Bewertung erfolgreich gelöscht."},
             status=status.HTTP_204_NO_CONTENT
