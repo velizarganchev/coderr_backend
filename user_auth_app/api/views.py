@@ -184,7 +184,6 @@ class UserRegister_View(APIView):
     """
     API view to register a new user.
     """
-    # permission_classes = [AllowAny]
 
     def post(self, request):
         """
@@ -261,19 +260,19 @@ class UserLogin_View(APIView):
     """
     API view to log in a user.
     """
-    # permission_classes = [AllowAny]
 
     def post(self, request):
         """
         Handle POST request for user authentication.
+        This method authenticates a user based on the provided username and password.
+        If the username or password is missing, it returns a 400 Bad Request response with an error message.
+        If the user does not exist, it returns a 404 Not Found response with an error message.
+        If the authentication is successful, it returns a 200 OK response with the user's token, username, email, and user ID.
+        If the authentication fails, it returns a 400 Bad Request response with an error message.
         Args:
-            request (Request): The HTTP request object containing 'username' and 'password' in the data.
+            request (Request): The HTTP request object containing the username and password.
         Returns:
-            Response: A Response object containing a token and user details if authentication is successful,
-                      or an error message if authentication fails.
-        Raises:
-            HTTP_401_UNAUTHORIZED: If 'username' or 'password' is not provided, or if authentication fails.
-            HTTP_404_NOT_FOUND: If the user with the provided 'username' does not exist.
+            Response: A DRF Response object with the appropriate status code and data.
         """
         username = request.data.get('username')
         password = request.data.get('password')
@@ -285,7 +284,7 @@ class UserLogin_View(APIView):
                 'Benutzername and Password sind erforderlich.')
             return Response(
                 {'detail': error_message_list},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -309,7 +308,7 @@ class UserLogin_View(APIView):
         else:
             return Response(
                 {'detail': 'Falsche Anmeldeinformationen oder ungültige Eingabe.'},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 

@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework import filters
 from rest_framework.response import Response
 from ..models import Review
@@ -45,6 +45,18 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        """
+        Returns the queryset of reviews filtered by the primary key (pk) of the review.
+        Returns:
+            QuerySet: The queryset of reviews filtered by the primary key (pk) of the review.
+        """
+        id = self.kwargs['pk']
+        if not id:
+            return NotFound(detail='Bewertung nicht gefunden.')
+
+        return Review.objects.filter(pk=self.kwargs['pk'])
 
     def delete(self, request, pk):
         """

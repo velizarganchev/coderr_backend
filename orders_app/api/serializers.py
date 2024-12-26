@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 
 from offers_app.models import OfferDetail, Feature
 from ..models import Order
@@ -34,15 +34,15 @@ class OrderSerializer(serializers.ModelSerializer):
 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Token '):
-            raise serializers.ValidationError(
-                {'detail': 'Token ist erforderlich'}
-            )
+            raise NotAuthenticated(
+                {'detail': 'Token fehlt oder ist ungültig'})
 
         token_key = auth_header.split(' ')[1]
         try:
             return Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise serializers.ValidationError({'detail': 'Ungültiges Token'})
+            raise NotAuthenticated(
+                {'detail': 'Token ist ungültig'})
 
     def create(self, validated_data):
         """
@@ -51,21 +51,21 @@ class OrderSerializer(serializers.ModelSerializer):
         customer_user = self.get_current_user_from_request(self.context)
 
         if customer_user.userprofile.type == 'business':
-            raise serializers.ValidationError(
-                {'detail': 'Nur Kunden können Bestellungen aufgeben'}
+            raise PermissionDenied(
+                {'detail': 'Geschäftskunden können keine Bestellungen aufgeben.'}
             )
 
         offer_detail_id = self.context['request'].data.get('offer_detail_id')
         if not offer_detail_id:
             raise serializers.ValidationError(
-                {'detail': 'offer_detail_id is required'}
+                {'detail': 'offer_detail_id ist erforderlich'}
             )
 
         try:
             offer_detail = OfferDetail.objects.get(id=offer_detail_id)
         except OfferDetail.DoesNotExist:
             raise serializers.ValidationError(
-                {'detail': 'Invalid offer_detail_id'}
+                {'detail': 'Ungültige offer_detail_id'}
             )
 
         business_user = offer_detail.offer.user

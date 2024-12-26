@@ -1,5 +1,5 @@
 from rest_framework import serializers, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotAuthenticated, PermissionDenied
 from rest_framework.authtoken.models import Token
 from ..models import Review
 
@@ -40,26 +40,15 @@ class ReviewSerializer(serializers.ModelSerializer):
 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Token '):
-            raise ValidationError(
-                {'detail': 'Authorization token fehlt.'},
-                code=status.HTTP_401_UNAUTHORIZED
-            )
-
+            raise NotAuthenticated(detail='Token fehlt.')
         token_key = auth_header.split(' ')[1]
         try:
             user = Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise ValidationError(
-                {'detail': 'Ungültiges Token.'},
-                code=status.HTTP_401_UNAUTHORIZED
-            )
-
+            raise PermissionDenied(detail='Ungültiger Token.')
         if user.userprofile.type != 'customer':
-            raise ValidationError(
-                {'detail': 'Nur Kunden können diese Aktion ausführen.'},
-                code=status.HTTP_403_FORBIDDEN
-            )
-
+            raise PermissionDenied(
+                detail='Sie haben keine Berechtigung, Bewertungen zu erstellen.')
         return user
 
     def validate_business_user(self, business_user):
@@ -78,11 +67,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         if not business_user:
             raise ValidationError(
                 {'detail': 'Das Feld business_user ist erforderlich.'})
-
-        if not business_user.is_active:
-            raise ValidationError(
-                {'detail': 'Das Unternehmen ist nicht aktiv.'})
-
         return business_user
 
     def create(self, validated_data):
@@ -105,8 +89,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             validated_data.get('business_user'))
 
         if Review.objects.filter(business_user=business_user, reviewer=user).exists():
-            raise ValidationError(
-                {'detail': 'Sie können dieses Unternehmen nur einmal bewerten.'})
+            raise PermissionDenied(
+                detail='Sie haben bereits eine Bewertung für dieses Unternehmen abgegeben.')
 
         review = Review.objects.create(reviewer=user, **validated_data)
         return review
@@ -125,9 +109,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         user = self.validate_customer()
 
         if not user == instance.reviewer:
-            raise ValidationError(
-                {'detail': 'Sie haben keine Berechtigung, diese Bewertung zu bearbeiten.'},
-                code=status.HTTP_403_FORBIDDEN
-            )
+            raise PermissionDenied(
+                detail='Sie haben keine Berechtigung, diese Bewertung zu bearbeiten.')
 
         return super().update(instance, validated_data)

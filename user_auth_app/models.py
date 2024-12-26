@@ -22,12 +22,12 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     file = models.ImageField(upload_to='profile_images', blank=True, null=True)
     location = models.CharField(
-        max_length=100, blank=True, null=True, default='Unknown')
+        max_length=100, blank=True, null=True, default='Berlin')
     tel = models.CharField(max_length=100, blank=True,
-                           null=True, default='Unknown')
-    description = models.TextField(blank=True, null=True, default='Unknown')
+                           null=True, default='1234567890')
+    description = models.TextField(blank=True, null=True, default='Default description')
     working_hours = models.CharField(
-        max_length=100, blank=True, null=True, default='Unknown')
+        max_length=100, blank=True, null=True, default='9:00 - 18:00')
     type = models.CharField(
         max_length=20, choices=USER_TYPE_CHOICES, default='customer')
 

@@ -1,5 +1,6 @@
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from ..models import Offer, OfferDetail, Feature
 from decimal import Decimal
 
@@ -101,25 +102,14 @@ class OfferSerializer(serializers.ModelSerializer):
             1] if request else None
 
         if not token_key:
-            raise serializers.ValidationError(
-                {'detail': 'Authorization token fehlt.'},
-                code=status.HTTP_401_UNAUTHORIZED
-            )
-
+            raise NotAuthenticated(detail='Token ist erforderlich.')
         try:
             user = Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise serializers.ValidationError(
-                {'detail': 'Ungültiges Token.'},
-                code=status.HTTP_401_UNAUTHORIZED
-            )
-
+            raise PermissionDenied(detail='Ungültiges Token.')
         if user.userprofile.type != 'business':
-            raise serializers.ValidationError(
-                {'detail': 'Nur Geschäftskunden können Angebote erstellen.'},
-                code=status.HTTP_401_UNAUTHORIZED
-            )
-
+            raise PermissionDenied(
+                detail='Nur Geschäftskunden können Angebote erstellen.')
         return user
 
     def create(self, validated_data):
@@ -240,20 +230,18 @@ class SingleOfferSerializer(serializers.ModelSerializer):
         request = context.get('request')
         if not request:
             raise serializers.ValidationError(
-                {'error': 'Request context fehlt.'}
+                {'detail': 'Request context fehlt.'}
             )
 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Token '):
-            raise serializers.ValidationError(
-                {'error': 'Token ist erforderlich'}
-            )
+            raise NotAuthenticated(detail='Token ist erforderlich.')
 
         token_key = auth_header.split(' ')[1]
         try:
             return Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise serializers.ValidationError({'error': 'Ungültiges Token'})
+            raise PermissionDenied(detail='Ungültiges Token.')
 
     def get_user_details_field(self, obj):
         return {
@@ -288,10 +276,8 @@ class SingleOfferSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user = self.get_current_user_from_request(self.context)
         if user != instance.user:
-            raise serializers.ValidationError(
-                {'detail': 'Nur der Ersteller kann das Angebot aktualisieren.'},
-                code=status.HTTP_403_FORBIDDEN
-            )
+            raise PermissionDenied(
+                detail='Nur der Eigentümer kann das Angebot aktualisieren.')
 
         details_data = validated_data.pop('details', [])
         self.update_offer_fields(instance, validated_data)
