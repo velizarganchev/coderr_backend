@@ -21,6 +21,11 @@ class OfferPagination(PageNumberPagination):
 class Offer_View(generics.ListCreateAPIView):
     """
     API view to list and create offers.
+
+    Query Parameters:
+    - creator_id: Filter by the creator's user ID
+    - search: Search in offer title or description
+    - max_delivery_time: Filter offers with delivery time <= max_delivery_time
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -42,14 +47,24 @@ class Offer_View(generics.ListCreateAPIView):
         max_delivery_time = self.request.query_params.get('max_delivery_time')
 
         if not creator_id and not search and not max_delivery_time:
-            return queryset.none()
+            return queryset
 
         if creator_id:
-            queryset = queryset.filter(user_id=creator_id)
+            try:
+                creator_id = int(creator_id)
+                queryset = queryset.filter(user_id=creator_id)
+            except ValueError:
+                raise serializers.ValidationError(
+                    {'creator_id': 'Muss eine ganze Zahl sein.'})
 
         if max_delivery_time:
-            queryset = queryset.filter(
-                min_delivery_time__lte=max_delivery_time)
+            try:
+                max_delivery_time = int(max_delivery_time)
+                queryset = queryset.filter(
+                    min_delivery_time__lte=max_delivery_time)
+            except ValueError:
+                raise serializers.ValidationError(
+                    {'max_delivery_time': 'Muss eine ganze Zahl sein.'})
 
         return queryset
 
@@ -64,14 +79,14 @@ class Offer_View(generics.ListCreateAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({
-            'count': len(serializer.data),
+            'count': queryset.count(),
             'results': serializer.data
         })
 
 
 class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
     """
-    API view to retrieve, update, or delete a single offer.
+    API view to retrieve, update and delete a single offer.
     """
     permission_classes = [permissions.IsAuthenticated]
     queryset = Offer.objects.all()

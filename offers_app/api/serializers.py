@@ -1,7 +1,7 @@
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
-from django.contrib.auth.models import User
 from ..models import Offer, OfferDetail, Feature
+from decimal import Decimal
 
 OFFER_DETAIL_FIELDS = ['revisions',
                        'delivery_time_in_days', 'price', 'offer_type']
@@ -147,7 +147,7 @@ class OfferSerializer(serializers.ModelSerializer):
             if min_delivery_time is None or offer_detail.delivery_time_in_days < min_delivery_time:
                 min_delivery_time = offer_detail.delivery_time_in_days
 
-        offer.min_price = min_price
+        offer.min_price = float(min_price)
         offer.min_delivery_time = min_delivery_time
         offer.save()
 
@@ -184,6 +184,9 @@ class OfferSerializer(serializers.ModelSerializer):
             representation['details'] = details
         else:
             representation['details'] = self.get_details_field(instance)
+
+        representation['min_price'] = Decimal("{0:.2f}".format(
+            instance.min_price)) if instance.min_price is not None else None
         return representation
 
     def get_details_field(self, obj):
@@ -277,6 +280,9 @@ class SingleOfferSerializer(serializers.ModelSerializer):
             })
 
         representation['details'] = details_representation
+
+        representation['min_price'] = Decimal("{0:.2f}".format(
+            instance.min_price)) if instance.min_price is not None else None
         return representation
 
     def update(self, instance, validated_data):
