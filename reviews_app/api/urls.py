@@ -11,9 +11,9 @@ Imports:
 - SingleReview_View: A class-based view from the views module that handles requests for a single review.
 """
 
-from .views import Review_View, SingleReview_View
+from .views import ReviewView, SingleReviewView
 
 urlpatterns = [
-    path('api/reviews/', Review_View.as_view(), name='reviews'),
-    path('api/reviews/<pk>/', SingleReview_View.as_view(), name='single_review'),
+    path('api/reviews/', ReviewView.as_view(), name='reviews'),
+    path('api/reviews/<pk>/', SingleReviewView.as_view(), name='single_review'),
 ]

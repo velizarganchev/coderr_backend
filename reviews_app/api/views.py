@@ -7,9 +7,9 @@ from ..models import Review
 from .serializers import ReviewSerializer
 
 
-class Review_View(generics.ListCreateAPIView):
+class ReviewView(generics.ListCreateAPIView):
     """
-    Review_View is a view for listing and creating reviews.
+    ReviewView is a view for listing and creating reviews.
     Attributes:
         permission_classes (list): Specifies that the view requires the user to be authenticated.
         queryset (QuerySet): Defines the base queryset for retrieving reviews.
@@ -30,17 +30,16 @@ class Review_View(generics.ListCreateAPIView):
     ordering = ['-updated_at']
 
 
-class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
+class SingleReviewView(generics.RetrieveUpdateDestroyAPIView):
     """
-    SingleReview_View is a view for retrieving, updating, and deleting a single review.
+    SingleReviewView is a view for retrieving, updating, and deleting a single review.
     Attributes:
         permission_classes (list): A list of permission classes that the user must pass to access this view.
         queryset (QuerySet): The queryset that retrieves all Review objects.
         serializer_class (Serializer): The serializer class used for validating and deserializing input, and for serializing output.
     Methods:
-        delete(request, pk):
+        delete(request, pk): Deletes a review if the requesting user is the reviewer.
     """
-
     permission_classes = [permissions.IsAuthenticated]
 
     queryset = Review.objects.all()
@@ -49,14 +48,13 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         """
         Returns the queryset of reviews filtered by the primary key (pk) of the review.
-        Returns:
-            QuerySet: The queryset of reviews filtered by the primary key (pk) of the review.
+        Raises:
+            NotFound: If the review with the specified pk is not found.
         """
-        id = self.kwargs['pk']
-        if not id:
-            return NotFound(detail='Bewertung nicht gefunden.')
-
-        return Review.objects.filter(pk=self.kwargs['pk'])
+        pk = self.kwargs.get('pk')
+        if not pk:
+            raise NotFound(detail='Bewertung nicht gefunden.')
+        return self.queryset.filter(pk=pk)
 
     def delete(self, request, pk):
         """
@@ -69,11 +67,9 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
                       A response object with an error message and HTTP status 404 if the review is not found.
                       Raises PermissionDenied if the user is not the reviewer of the review.
         """
-        user = request.user
-
         try:
             review = Review.objects.get(pk=pk)
-            if not user == review.reviewer:
+            if request.user != review.reviewer:
                 raise PermissionDenied(
                     {"detail": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
                 )
@@ -83,12 +79,7 @@ class SingleReview_View(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if not request.user == review.reviewer:
-            raise PermissionDenied(
-                {"detail": "Sie haben keine Berechtigung, diese Bewertung zu löschen."}
-            )
-
-        Review.delete(review)
+        review.delete()
         return Response(
             {"detail": "Bewertung erfolgreich gelöscht."},
             status=status.HTTP_204_NO_CONTENT

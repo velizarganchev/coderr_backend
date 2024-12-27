@@ -8,7 +8,7 @@ from reviews_app.models import Review
 from user_auth_app.models import UserProfile
 
 
-class BaseInfo_View(APIView):
+class BaseInfoView(APIView):
     authentication_classes = []
 
     def get(self, request):
@@ -33,6 +33,6 @@ class BaseInfo_View(APIView):
         return Response({
             "offer_count": offer_count,
             "review_count": review_count,
-            "average_rating": average_rating,
+            "average_rating": "{:.1f}".format(average_rating),
             "business_profile_count": business_profile_count
         })

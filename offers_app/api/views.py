@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -18,7 +18,7 @@ class OfferPagination(PageNumberPagination):
     max_page_size = 50
 
 
-class Offer_View(generics.ListCreateAPIView):
+class OfferView(generics.ListCreateAPIView):
     """
     API view to list and create offers.
 
@@ -43,18 +43,14 @@ class Offer_View(generics.ListCreateAPIView):
         queryset = super().get_queryset()
 
         creator_id = self.request.query_params.get('creator_id')
-        search = self.request.query_params.get('search')
         max_delivery_time = self.request.query_params.get('max_delivery_time')
-
-        if not creator_id and not search and not max_delivery_time:
-            return queryset
 
         if creator_id:
             try:
                 creator_id = int(creator_id)
                 queryset = queryset.filter(user_id=creator_id)
             except ValueError:
-                raise serializers.ValidationError(
+                raise ValidationError(
                     {'creator_id': 'Muss eine ganze Zahl sein.'})
 
         if max_delivery_time:
@@ -63,28 +59,13 @@ class Offer_View(generics.ListCreateAPIView):
                 queryset = queryset.filter(
                     min_delivery_time__lte=max_delivery_time)
             except ValueError:
-                raise serializers.ValidationError(
+                raise ValidationError(
                     {'max_delivery_time': 'Muss eine ganze Zahl sein.'})
 
         return queryset
 
-    def list(self, request, *args, **kwargs):
-        """Override the list method to add custom response structure."""
-        queryset = self.filter_queryset(self.get_queryset())
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'count': queryset.count(),
-            'results': serializer.data
-        })
-
-
-class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
+class SingleOfferView(generics.RetrieveUpdateDestroyAPIView):
     """
     API view to retrieve, update and delete a single offer.
     """
@@ -115,7 +96,7 @@ class SingleOffer_View(generics.RetrieveUpdateDestroyAPIView):
             )
 
 
-class SingleOfferDetails_View(generics.RetrieveUpdateDestroyAPIView):
+class SingleOfferDetailsView(generics.RetrieveUpdateAPIView):
     """
     API view to retrieve details of a single offer.
     """

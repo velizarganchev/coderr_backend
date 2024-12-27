@@ -45,6 +45,11 @@ class Offer(models.Model):
         max_digits=10, decimal_places=2, blank=True, null=True)
     min_delivery_time = models.PositiveIntegerField(blank=True, null=True)
 
+    def delete(self, *args, **kwargs):
+        for detail in self.details.all():
+            detail.delete()
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
@@ -68,7 +73,8 @@ class OfferDetail(models.Model):
     ]
 
     title = models.CharField(max_length=100)
-    revisions = models.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(100)])
+    revisions = models.IntegerField(
+        validators=[MinValueValidator(-1), MaxValueValidator(100)])
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     features = models.ManyToManyField(Feature, blank=True)
@@ -77,5 +83,11 @@ class OfferDetail(models.Model):
     offer = models.ForeignKey(
         Offer, related_name='details', on_delete=models.CASCADE, null=True, blank=True)
 
+    def delete(self, *args, **kwargs):
+        for feature in self.features.all():
+            if not feature.offerdetail_set.exclude(pk=self.pk).exists():
+                feature.delete()
+        super().delete(*args, **kwargs)
+
     def __str__(self):
-        return self.title
+        return f"({self.id}) {self.title}"

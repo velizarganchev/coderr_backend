@@ -9,13 +9,13 @@ Routes:
 - 'api/completed-order-count/<pk>/': Maps to CompletedOrderCount_View, which handles requests to get the count of completed orders for a specific user identified by their primary key (pk).
 """
 
-from .views import Orders_View, SingleOrder_View, NotCompletedOrderCount_View, CompletedOrderCount_View
+from .views import OrdersView, SingleOrderView, NotCompletedOrderCountView, CompletedOrderCountView
 
 urlpatterns = [
-    path('api/orders/', Orders_View.as_view(), name='orders'),
-    path('api/orders/<pk>/', SingleOrder_View.as_view(), name='single_order'),
+    path('api/orders/', OrdersView.as_view(), name='orders'),
+    path('api/orders/<pk>/', SingleOrderView.as_view(), name='single_order'),
     path('api/order-count/<pk>/',
-         NotCompletedOrderCount_View.as_view(), name='not_completed_order'),
+         NotCompletedOrderCountView.as_view(), name='not_completed_order'),
     path('api/completed-order-count/<pk>/',
-         CompletedOrderCount_View.as_view(), name='completed_order'),
+         CompletedOrderCountView.as_view(), name='completed_order'),
 ]

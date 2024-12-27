@@ -35,6 +35,22 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days',
                   'price', 'features', 'offer_type']
 
+    def validate_user(self):
+        """
+        Validates the business user based on the request context.
+        """
+        request = self.context.get('request')
+        token_key = request.headers.get('Authorization').split(' ')[
+            1] if request else None
+
+        if not token_key:
+            raise NotAuthenticated(detail='Token ist erforderlich.')
+        try:
+            user = Token.objects.get(key=token_key).user
+        except Token.DoesNotExist:
+            raise PermissionDenied(detail='Ungültiges Token.')
+        return user
+
     def create(self, validated_data):
         features_data = validated_data.pop('features', [])
         offer_detail = OfferDetail.objects.create(**validated_data)
@@ -48,6 +64,11 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         return offer_detail
 
     def update(self, instance, validated_data):
+        user = self.validate_user()
+        if user != instance.offer.user:
+            raise PermissionDenied(
+                detail='Nur der Eigentümer kann das Angebot aktualisieren.')
+
         features_data = validated_data.pop('features', [])
         instance = super().update(instance, validated_data)
 
@@ -65,7 +86,7 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         features_representation = [
             feature.name for feature in instance.features.all()]
         representation['features'] = features_representation
-
+        representation['price'] = Decimal("{0:.2f}".format(instance.price))
         return representation
 
 
