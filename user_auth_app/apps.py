@@ -25,8 +25,8 @@ class UserAuthAppConfig(AppConfig):
                 from rest_framework.authtoken.models import Token
                 users_to_create = [
                     {"username": "andrey", "password": "asdasd",
-                        'type': 'customer', "is_staff": False},
-                    {"username": "kevin", "password": "asdasd24",
+                     "email": "andrey@hotmail.com", "first_name": "Andrey", "last_name": "Lastname", 'type': 'customer', "is_staff": False},
+                    {"username": "kevin", "password": "asdasd24", "email": "kevin@hotmail.com", "first_name": "Kevin", "last_name": "Lastname",
                         'type': 'business', "is_staff": True},
                 ]
 
@@ -35,6 +35,9 @@ class UserAuthAppConfig(AppConfig):
                         user = User.objects.create_user(
                             username=user_data["username"],
                             password=user_data["password"],
+                            email=user_data["email"],
+                            first_name=user_data["first_name"],
+                            last_name=user_data["last_name"],
                             is_staff=user_data.get("is_staff", False),
                         )
                         user.userprofile.type = user_data["type"]
