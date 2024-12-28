@@ -31,6 +31,9 @@ class UserProfileType_View(APIView):
                       or an error message if type is not provided.
         """
         if type:
+            if type not in ['customer', 'business']:
+                return Response({'detail': 'Ungültiger Typ.'}, status=status.HTTP_400_BAD_REQUEST)
+
             userprofiles = UserProfile.objects.filter(type=type)
             serializer = UserProfileTypeSerializer(userprofiles, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)

@@ -57,6 +57,15 @@ class UserTests(APITestCase):
             "password": "wrongpassword"
         }
         response = self.client.post(self.login_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_profile_successful(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_profile_unauthorized(self):
+        response = self.client.get(self.profile_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_profile_successful(self):
@@ -67,7 +76,53 @@ class UserTests(APITestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, "updatedemail@example.com")
 
+    def test_update_profile_invalid_data(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key)
+        data = {"email": "updatedemail@example.com"}
+        response = self.client.put(self.profile_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_update_profile_unauthorized(self):
         data = {"email": "updatedemail@example.com"}
         response = self.client.patch(self.profile_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_profile_invalid_token(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key + 'invalid')
+        data = {"email": "updatedemail@example.com"}
+        response = self.client.patch(self.profile_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_customer_profile_type_successful(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.get(
+            reverse('profiletype', kwargs={'type': 'customer'}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_business_profile_type_successful(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.get(
+            reverse('profiletype', kwargs={'type': 'business'}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_profile_type_invalid_type(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.get(
+            reverse('profiletype', kwargs={'type': 'invalid'}))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_profile_successful(self):
+        self.user.is_staff = True
+        self.user.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.delete(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_logout_user_successful(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.post(reverse('logout'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Token.objects.count(), 0)

@@ -84,7 +84,7 @@ class NotCompletedOrderCountView(APIView):
         if not request.user and str(request.user.pk) != str(pk):
             return Response(
                 {"detail": "Sie können nur Bestellungen für Ihr eigenes Konto abrufen."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
         order_count = Order.objects.filter(

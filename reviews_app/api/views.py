@@ -45,16 +45,31 @@ class SingleReviewView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
+    from rest_framework.exceptions import NotFound
+
     def get_queryset(self):
         """
         Returns the queryset of reviews filtered by the primary key (pk) of the review.
         Raises:
-            NotFound: If the review with the specified pk is not found.
+            NotFound: If the review with the specified pk is not found or invalid.
         """
         pk = self.kwargs.get('pk')
-        if not pk:
-            raise NotFound(detail='Bewertung nicht gefunden.')
-        return self.queryset.filter(pk=pk)
+
+        if pk is None:
+            raise NotFound(
+                detail="Bewertung nicht gefunden. Bitte geben Sie eine ID an.")
+        
+        try:
+            pk = int(pk)
+        except ValueError:
+            raise NotFound(detail="Die angegebene ID muss eine Ganzzahl sein.")
+
+        queryset = self.queryset.filter(pk=pk)
+        if not queryset.exists():
+            raise NotFound(
+                detail="Bewertung mit der angegebenen ID nicht gefunden.")
+
+        return queryset
 
     def delete(self, request, pk):
         """

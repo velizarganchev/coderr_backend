@@ -127,9 +127,9 @@ class OfferSerializer(serializers.ModelSerializer):
         try:
             user = Token.objects.get(key=token_key).user
         except Token.DoesNotExist:
-            raise PermissionDenied(detail='Ungültiges Token.')
+            raise NotAuthenticated(detail='Ungültiges Token.')
         if user.userprofile.type != 'business':
-            raise PermissionDenied(
+            raise NotAuthenticated(
                 detail='Nur Geschäftskunden können Angebote erstellen.')
         return user
 

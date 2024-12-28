@@ -11,9 +11,9 @@ class OrderTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser', password='testpassword')
-        self.token = Token.objects.create(user=self.user)
         self.user.userprofile.type = 'customer'
         self.user.userprofile.save()
+        self.token = Token.objects.create(user=self.user)
 
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         self.order_url = reverse('orders')
@@ -46,6 +46,22 @@ class OrderTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Order.objects.count(), 1)
 
+    def test_create_order_with_invalid_user(self):
+        data = {
+            "offer_detail_id": self.offer_detail.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.business_token.key)
+        response = self.client.post(self.order_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_order_with_invalid_offer_detail_id(self):
+        data = {
+            "offer_detail_id": 100
+        }
+        response = self.client.post(self.order_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_get_orders(self):
         Order.objects.create(
             customer_user=self.user, business_user=self.business_user, title="Basic Package",
@@ -54,6 +70,15 @@ class OrderTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_get_orders_with_invalid_token(self):
+        Order.objects.create(
+            customer_user=self.user, business_user=self.business_user, title="Basic Package",
+            revisions=2, delivery_time_in_days=5, price=100, offer_type="basic")
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key + 'invalid')
+        response = self.client.get(self.order_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_get_single_order(self):
         order = Order.objects.create(
             customer_user=self.user, business_user=self.business_user, title="Basic Package",
@@ -61,6 +86,10 @@ class OrderTests(APITestCase):
         response = self.client.get(self.single_order_url(order.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], "Basic Package")
+
+    def test_get_single_order_invalid_id(self):
+        response = self.client.get(self.single_order_url(0))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_order_status(self):
         order = Order.objects.create(
@@ -103,6 +132,11 @@ class OrderTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['order_count'], 1)
 
+    def test_not_completed_order_count_with_invalid_user_id(self):
+        response = self.client.get(
+            self.not_completed_order_count_url(100))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_get_completed_order_count(self):
         Order.objects.create(
             customer_user=self.user, business_user=self.business_user, title="Basic Package",
@@ -111,3 +145,8 @@ class OrderTests(APITestCase):
             self.completed_order_count_url(self.user.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['completed_order_count'], 1)
+
+    def test_completed_order_count_with_invalid_user(self):
+        response = self.client.get(
+            self.completed_order_count_url(100))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
