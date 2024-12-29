@@ -42,7 +42,6 @@ class UserAuthAppConfig(AppConfig):
                         )
                         user.userprofile.type = user_data["type"]
                         user.userprofile.save()
-                        Token.objects.create(user=user)
                         logging.info(f"User {user_data['username']} created.")
                     else:
                         logging.info(

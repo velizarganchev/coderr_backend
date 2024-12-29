@@ -188,7 +188,7 @@ class OfferSerializer(serializers.ModelSerializer):
                     "title": detail.title,
                     "revisions": detail.revisions,
                     "delivery_time_in_days": detail.delivery_time_in_days,
-                    "price": str(detail.price),
+                    "price": detail.price,
                     "features": features,
                     "offer_type": detail.offer_type,
                 })
@@ -296,9 +296,10 @@ class SingleOfferSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         user = self.get_current_user_from_request(self.context)
-        if user != instance.user:
+        print(user, instance.user)
+        if user != instance.user and user.is_staff != True:
             raise PermissionDenied(
-                detail='Nur der Eigentümer kann das Angebot aktualisieren.')
+                detail='Nur der Eigentümer oder das Personal kann das Angebot aktualisieren.')
 
         details_data = validated_data.pop('details', [])
         self.update_offer_fields(instance, validated_data)

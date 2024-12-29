@@ -217,7 +217,7 @@ class UserRegister_View(APIView):
         user.userprofile.type = type
         user.userprofile.save()
 
-        token = Token.objects.create(user=user)
+        token = Token.objects.get(user=user)
 
         return Response({
             'token': token.key,
@@ -301,7 +301,7 @@ class UserLogin_View(APIView):
 
         user = authenticate(username=username, password=password)
         if user is not None:
-            token, created = Token.objects.get_or_create(user=user)
+            token = Token.objects.get(user=user)
             return Response({
                 'token': token.key,
                 'username': user.username,
