@@ -27,7 +27,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5501"
+    "http://127.0.0.1:5500"
 ]
 
 # Application definition
@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'offers_app',
     'user_auth_app',
     'orders_app',
-    'reviews_app',  
+    'reviews_app',
     "corsheaders",
     'rest_framework',
     'rest_framework.authtoken',
