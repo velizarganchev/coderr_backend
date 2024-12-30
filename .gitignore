@@ -158,6 +158,7 @@ cython_debug/
 initialized.flag
 
 # Uploaded files
+staticfiles/
 uploads/images/*
 uploads/profile_images/*
 

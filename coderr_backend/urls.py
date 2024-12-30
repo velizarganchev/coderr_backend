@@ -14,4 +14,5 @@ urlpatterns = [
     path('', include('reviews_app.api.urls')),
     # Temporarily comment out the catch-all pattern
     # path('^(?P<path>.*)$', include('django.views.static.serve')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) \
+  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
